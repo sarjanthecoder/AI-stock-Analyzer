@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Stock Analyzer by Sarjan</title>
+    <link rel="icon" href="static/stock.jpg">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* --- General Body & Layout --- */
+        :root {
+            --bg-color: #0d1117;
+            --panel-bg: rgba(26, 32, 44, 0.65);
+            --panel-border: rgba(100, 116, 139, 0.4);
+            --text-primary: #e2e8f0;
+            --text-secondary: #a0aec0;
+            --accent-gradient: linear-gradient(90deg, #10B981, #34D399);
+            --accent-start: #10B981;
+            --accent-start-glow: rgba(16, 185, 129, 0.5);
+            --accent-end: #34D399;
+            --accent-end-glow: rgba(52, 211, 153, 0.5);
+            --error-bg: rgba(227, 72, 72, 0.1);
+            --error-border: #e53e3e;
+            --error-text: #feb2b2;
+        }
+
+        body {
+            position: relative;
+            overflow-x: hidden;
+            background-color: #0d1117;
+            background-image:
+                radial-gradient(ellipse 50% 80% at 20% -10%, rgba(16, 185, 129, 0.25), transparent),
+                radial-gradient(ellipse 50% 80% at 80% 110%, rgba(52, 211, 153, 0.2), transparent),
+                linear-gradient(rgba(13, 17, 23, 0.92), rgba(13, 17, 23, 0.92)),
+                url('https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            color: var(--text-primary);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0 2rem;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-sizing: border-box;
+        }
+
+        /* --- Main Page Header & Title --- */
+        .header-container {
+            width: 100%;
+            max-width: 1400px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            padding-top: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .page-title {
+            margin: 0;
+            font-size: 2.5rem;
+            font-weight: 700;
+            text-align: center;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-fill-color: transparent;
+        }
+
+        #about-btn {
+            position: absolute;
+            right: 0;
+            padding: 0.6rem 1.2rem;
+            background-color: rgba(56, 73, 106, 0.5);
+            border: 1px solid var(--panel-border);
+            color: var(--text-primary);
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        #about-btn:hover {
+            background-color: rgba(74, 85, 104, 0.7);
+            border-color: #4a5568;
+        }
+
+        .main-container {
+            display: flex;
+            gap: 2rem;
+            width: 100%;
+            max-width: 1400px;
+            flex-grow: 1; /* Allows footer to sit below */
+            min-height: 0; /* Flexbox fix for overflow */
+        }
+
+        /* --- Left & Right Glass Panels --- */
+        .left-panel,
+        .right-panel {
+            flex: 1;
+            background-color: var(--panel-bg);
+            backdrop-filter: blur(12px);
+            border-radius: 16px;
+            padding: 2.5rem;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid var(--panel-border);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.37);
+        }
+
+        .right-panel {
+            flex: 2;
+        }
+        
+        /* --- General Component Styling --- */
+        
+        .left-panel h1 {
+            font-size: 1.75rem;
+            font-weight: 700;
+            margin: 0 0 0.5rem 0;
+            display: flex;
+            align-items: center;
+        }
+
+        .left-panel .subtitle {
+            color: var(--text-secondary);
+            margin-bottom: 2.2rem;
+            line-height: 1.6;
+        }
+
+        .input-group {
+            margin-top: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 1rem;
+            border: 1px solid var(--panel-border);
+            background-color: rgba(13, 17, 23, 0.75);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 1rem;
+            box-sizing: border-box;
+            transition: all 0.25s ease;
+        }
+
+        input[type="text"]::placeholder {
+            color: var(--text-secondary);
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--accent-start);
+            box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.2);
+        }
+
+        button#analyze-btn {
+            padding: 1rem;
+            background: var(--accent-gradient);
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            color: white;
+            font-weight: 600;
+            font-size: 1rem;
+            transition: all 0.25s ease;
+            box-shadow: 0 6px 20px var(--accent-start-glow);
+        }
+
+        button#analyze-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px var(--accent-end-glow);
+        }
+        
+        @keyframes fadeInSlide {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* --- UI States (Placeholder, Loading, etc.) --- */
+        .state-view {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            padding: 2.5rem;
+            box-sizing: border-box;
+        }
+
+        .state-view.centered {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: var(--text-secondary);
+        }
+
+        .state-view .icon {
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+            opacity: 0.9;
+        }
+        
+        .bot-loader { font-size: 56px; }
+        .loading-text { margin-top: 1rem; }
+
+        /* --- Results Display Styling --- */
+        #result-container { display: flex; flex-direction: column; }
+        .results-content-area { flex-grow: 1; overflow-y: auto; padding-right: 1rem; }
+        .results-content-area::-webkit-scrollbar { width: 8px; }
+        .results-content-area::-webkit-scrollbar-track { background: transparent; }
+        .results-content-area::-webkit-scrollbar-thumb { background: var(--panel-border); border-radius: 10px; }
+        #result-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+        #analysis-title { font-size: 1.75rem; font-weight: 700; margin: 0; }
+        #pdf-btn { display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 1rem; background-color: rgba(56, 73, 106, 0.5); border: 1px solid var(--panel-border); border-radius: 8px; color: var(--text-primary); font-weight: 500; cursor: pointer; transition: all 0.2s ease; }
+        #pdf-btn:hover { background-color: rgba(74, 85, 104, 0.7); border-color: #4a5568; }
+        .section-header { font-size: 1.1rem; font-weight: 600; background-color: rgba(13, 17, 23, 0.7); padding: 0.75rem 1.25rem; border-radius: 8px; margin-top: 2rem; margin-bottom: 1rem; border: 1px solid var(--panel-border); }
+        .section-header:first-of-type { margin-top: 0; }
+        pre { background-color: rgba(13, 17, 23, 0.9); padding: 1.25rem; border-radius: 10px; overflow-x: auto; white-space: pre-wrap; word-wrap: break-word; font-family: "Courier New", Courier, monospace; border: 1px solid var(--panel-border); color: var(--text-primary); }
+        #analysis-content { line-height: 1.7; }
+        #analysis-content h3 { font-size: 1.2rem; margin-top: 1.5em; margin-bottom: 0.5em; color: var(--accent-start); }
+        #analysis-content ul { padding-left: 20px; }
+        #analysis-content strong { color: var(--text-primary); }
+        #error-box { background-color: var(--error-bg); border: 1px solid var(--error-border); color: var(--error-text); padding: 1.5rem; border-radius: 10px; font-weight: 500; }
+
+        /* --- About Me Modal Styling --- */
+        .modal-overlay {
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: var(--panel-bg);
+            backdrop-filter: blur(12px);
+            border-radius: 16px;
+            padding: 2rem 2.5rem;
+            border: 1px solid var(--panel-border);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.37);
+            width: 90%;
+            max-width: 550px;
+            position: relative;
+            animation: fadeInSlide .4s ease both;
+        }
+
+        .modal-close-btn {
+            color: var(--text-secondary);
+            position: absolute;
+            top: 1rem;
+            right: 1.5rem;
+            font-size: 2rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+        .modal-close-btn:hover {
+            color: var(--text-primary);
+        }
+
+        .modal-content h2 { color: var(--accent-start); margin-top: 0; }
+        .modal-content p { line-height: 1.7; color: var(--text-secondary); }
+        .modal-content strong { color: var(--text-primary); }
+        .modal-content a { color: var(--accent-end); text-decoration: none; font-weight: 600; }
+        .modal-content a:hover { text-decoration: underline; }
+        
+        /* --- Footer Styling --- */
+        footer {
+            width: 100%;
+            max-width: 1400px;
+            padding: 1.5rem 0;
+            margin-top: 2rem;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            border-top: 1px solid var(--panel-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+        .footer-links a {
+            color: var(--text-secondary);
+            text-decoration: none;
+            margin: 0 0.75rem;
+            transition: color 0.2s ease;
+        }
+        .footer-links a:hover {
+            color: var(--accent-end);
+        }
+
+        /* --- Responsive & Print Tweaks --- */
+        @media (max-width: 900px) {
+            body { padding: 0 1rem; justify-content: flex-start; overflow-y: auto; }
+            .header-container { margin-bottom: 1.5rem; }
+            .page-title { font-size: 2rem; }
+            #about-btn { position: static; margin-left: auto; }
+            .header-container { flex-wrap: wrap; justify-content: space-between; gap: 1rem; }
+            .main-container { flex-direction: column; height: auto; width: 100%; }
+            .left-panel, .right-panel { padding: 1.5rem; }
+            .right-panel { min-height: 420px; }
+            footer { justify-content: center; flex-direction: column; }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header-container">
+        <h1 class="page-title">AI Stock Analyzer</h1>
+        <button id="about-btn">About</button>
+    </div>
+
+    <div class="main-container">
+        <div class="left-panel">
+            <h1>
+                <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align: middle; margin-right: 12px; color: var(--accent-start);">
+                    <path d="M3 3v18h18"/>
+                    <path d="m19 9-5 5-4-4-3 3"/>
+                </svg>
+                Stock Analyzer
+            </h1>
+            <p class="subtitle">Enter a stock symbol to get the latest data and receive an AI-powered investment analysis.</p>
+
+            <div class="input-group">
+                <input type="text" id="symbol-input" placeholder="Enter Stock Symbol (e.g. AAPL)" />
+                <button id="analyze-btn" onclick="fetchStockData()">Analyze</button>
+            </div>
+        </div>
+
+        <div class="right-panel">
+            <div id="placeholder" class="state-view centered">
+                <div class="icon">🤖</div>
+                <h2>AI Stock Analyzer</h2>
+                <p>Enter a stock symbol to begin your analysis.</p>
+            </div>
+            <div id="loading-state" class="state-view centered" style="display: none;">
+                <div class="bot-loader">🤖</div>
+                <div class="loading-text">Analyzing with Gemini — this might take a few seconds.</div>
+            </div>
+            <div id="error-box" class="state-view centered" style="display: none;"></div>
+            <div id="result-container" class="state-view" style="display: none;">
+                <div id="result-header">
+                    <h2 id="analysis-title"></h2>
+                    <button id="pdf-btn" onclick="window.print()">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style="margin-right: 0.5rem;">
+                            <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5z" />
+                            <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L6.354 8.146a.5.5 0 1 0-.708.708l2 2z" />
+                        </svg>
+                        Save as PDF
+                    </button>
+                </div>
+                <div class="results-content-area">
+                    <div class="section-header">📋 Raw Stock Data</div>
+                    <pre id="stock-data"></pre>
+                    <div class="section-header">💡 AI Analysis</div>
+                    <div id="analysis-content"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <div class="creator-info">
+            Developed by Sarjan | Full-Stack & AI Developer
+        </div>
+        <div class="footer-links">
+            <a href=" https://www.fool.com" target="_blank">Stock Blogs</a>
+            <a href="https://www.marketwatch.com" target="_blank">Market News</a>
+        
+        </div>
+    </footer>
+
+    <div id="about-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <span class="modal-close-btn">&times;</span>
+            <h2>About the Creator</h2>
+            <p>This application was designed and developed by <strong>Sarjan</strong>, a passionate full-stack developer with expertise in API development and AI integration.</p>
+            <p>He specializes in creating intelligent, data-driven web applications that solve real-world problems. You can replace the links below to connect with him.</p>
+            <p>
+                <a href="https://www.linkedin.com/in/sarjan-p-7a97862a0/" target="_blank">LinkedIn</a> &nbsp;|&nbsp; 
+                <a href="https://github.com/sarjanthecoder" target="_blank">GitHub</a> &nbsp;|&nbsp; 
+                <a href="https://sarjan.site" target="_blank">Portfolio</a>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // --- Element Declarations ---
+        const symbolInput = document.getElementById("symbol-input");
+        const placeholderDiv = document.getElementById("placeholder");
+        const loadingStateDiv = document.getElementById("loading-state");
+        const resultContainer = document.getElementById("result-container");
+        const errorBox = document.getElementById("error-box");
+        const stockPre = document.getElementById("stock-data");
+        const analysisDiv = document.getElementById("analysis-content");
+        const analysisTitle = document.getElementById("analysis-title");
+        const analyzeBtn = document.getElementById("analyze-btn");
+        const aboutModal = document.getElementById("about-modal");
+        const aboutBtn = document.getElementById("about-btn");
+        const closeModalBtn = document.querySelector(".modal-close-btn");
+
+        // --- Event Listeners ---
+        symbolInput.addEventListener("keyup", (event) => {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                fetchStockData();
+            }
+        });
+        
+        aboutBtn.onclick = () => { aboutModal.style.display = "flex"; };
+        closeModalBtn.onclick = () => { aboutModal.style.display = "none"; };
+        window.onclick = (event) => {
+            if (event.target == aboutModal) {
+                aboutModal.style.display = "none";
+            }
+        };
+
+        // --- Core Functions ---
+        function showState(state) {
+            placeholderDiv.style.display = 'none';
+            loadingStateDiv.style.display = 'none';
+            resultContainer.style.display = 'none';
+            errorBox.style.display = 'none';
+            const stateMap = {
+                'loading': loadingStateDiv,
+                'result': resultContainer,
+                'error': errorBox,
+            };
+            (stateMap[state] || placeholderDiv).style.display = 'flex';
+        }
+
+        async function fetchStockData() {
+            const symbol = symbolInput.value.trim().toUpperCase();
+            if (!symbol) {
+                showState('error');
+                errorBox.textContent = "Error: Please enter a stock symbol.";
+                return;
+            }
+            analyzeBtn.disabled = true;
+            analyzeBtn.style.opacity = 0.8;
+            showState('loading');
+            try {
+                const res = await fetch("http://127.0.0.1:5000/api/stock", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ symbol })
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    throw new Error(data.error || "An unknown server error occurred.");
+                }
+                analysisTitle.textContent = `${symbol} Analysis`;
+                stockPre.textContent = JSON.stringify(data.stock_data, null, 2);
+                analysisDiv.innerHTML = data.gemini_analysis ? marked.parse(String(data.gemini_analysis)) : "No AI analysis was returned.";
+                showState('result');
+            } catch (err) {
+                errorBox.textContent = `Error: ${err.message}`;
+                showState('error');
+                console.error("Fetch Error:", err);
+            } finally {
+                analyzeBtn.disabled = false;
+                analyzeBtn.style.opacity = 1;
+            }
+        }
+    </script>
+</body>
+
+</html>
